@@ -18,8 +18,8 @@ _config_dir     = os.path.abspath('AniGraph') # TODO: change to standard config 
 # Check the config file and load into memory if it exists
 def config(conf):
     _cfg = os.path.join(_config_dir, _config_file)
-    if not os.path.exists(_cfg): pass
-    with open(os.path.join(_cfg)) as file: conf = load_yaml(file, loader)
+    if os.path.exists(_cfg):
+        with open(os.path.join(_cfg)) as file: conf = load_yaml(file, loader)
 
 # Change the config settings
 def set_config(conf):
@@ -48,6 +48,12 @@ def first_run(conf):
 
     with open(os.path.join(conf['config_path'], _config_file), 'w') as file:
         save_yaml(conf, file)
+
+    # Check the database to see if there is any userdata saved
+    # if not request oauth for user and create a new table with
+    # login information proceed afterwards requesting a sync_db()
+    # TODO
+
 
 # Print a short help message
 def print_short_help():
