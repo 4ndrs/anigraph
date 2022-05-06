@@ -9,7 +9,7 @@
 #
 import os
 from sys  import stderr
-from yaml import dump as save_yaml, load as load_yaml
+from yaml import dump as save_yaml, load as load_yaml, CLoader as loader
 
 _version        = 0.01
 _config_file    = 'config.yaml'
@@ -17,7 +17,9 @@ _config_dir     = os.path.abspath('AniGraph') # TODO: change to standard config 
 
 # Check the config file and load into memory if it exists
 def config(conf):
-    pass
+    _cfg = os.path.join(_config_dir, _config_file)
+    if not os.path.exists(_cfg): pass
+    with open(os.path.join(_cfg)) as file: conf = load_yaml(file, loader)
 
 # Change the config settings
 def set_config(conf):
