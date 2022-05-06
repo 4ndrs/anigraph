@@ -22,11 +22,11 @@ def set_config(conf):
 
 # Do the first run asking the user if they want to proceed using 
 # the default settings or want to personalize the configuration
-def first_run(conf, exec_path):
+def first_run(conf):
     # The configuration consist of the location for the js/html files
     # config files path, and synchronization settings
     # Use only local paths as the default for the moment
-    conf['config_path'] = findall('(.+/)', exec_path)[0]
+    conf['config_path'] = findall('(.+/)', conf['exec_path'])[0]
     conf['save_path']   = conf['config_path']
     pass
 

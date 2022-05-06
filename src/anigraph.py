@@ -21,9 +21,10 @@ if platform != 'linux':
 # Load the config file
 conf = dict()
 ani.config(conf)
+conf['exec_path'] = argv[0]
 
 # If there is no config file, assume it's the first run
-if len(conf) < 1: ani.first_run(conf, argv[0])
+if len(conf) < 2: ani.first_run(conf)
 
 # Arguments:
 #   --help    or -h - to print the extended help
