@@ -21,10 +21,9 @@ if platform != 'linux':
 # Load the config file
 conf = dict()
 ani.config(conf)
-conf['exec_path'] = argv[0]
 
 # If there is no config file, assume it's the first run
-if len(conf) < 2: ani.first_run(conf)
+if len(conf) < 1: ani.first_run(conf)
 
 # Arguments:
 #   --help    or -h - to print the extended help
@@ -34,7 +33,7 @@ if len(conf) < 2: ani.first_run(conf)
 #   --open    or -o - to open the js/html (generate & open if no js/html or old data)
 #   --delete  or -d - to delete local account data
 #   --version or -v - to print version information
-arguments = ['help', 'config', 'sync', 'export', 'open', 'delete', 'version'
+arguments = ['help', 'config', 'sync', 'export', 'open', 'delete', 'version',
              'h', 'c', 's', 'x', 'o', 'd', 'v']
 
 # Only the first argument will be parsed for now
@@ -46,7 +45,7 @@ if len(argv) < 2:
     # if the files have not been generated yet, and/or the database has not
     # been sync'd, this will sync the database and generate the js/html files
     # and proceed to run them
-    ani.open(conf['config_path'], conf['save_path'])
+    ani.open_stats(conf['config_path'], conf['save_path'])
 elif arg is None:
     print('ERROR: Unrecognized argument format: %s\n' %argv[1], file=stderr)
     ani.print_short_help()
@@ -58,9 +57,9 @@ elif arg not in arguments:
 
 if arg == 'help'    or 'h': ani.print_help()
 if arg == 'config'  or 'c': ani.set_config(conf)
-if arg == 'sync'    or 's': ani.sync(conf['config_path'])
-if arg == 'export'  or 'x': ani.export(conf['config_path'], conf['save_path'])
-if arg == 'open'    or 'o': ani.open(conf['config_path'],   conf['save_path'])
+if arg == 'sync'    or 's': ani.sync_db(conf['config_path'])
+if arg == 'export'  or 'x': ani.export_stats(conf['config_path'], conf['save_path'])
+if arg == 'open'    or 'o': ani.open_stats(conf['config_path'], conf['save_path'])
 if arg == 'delete'  or 'd': ani.delete(conf['config_path'], conf['save_path'])
 if arg == 'version' or 'v': ani.version()
 
