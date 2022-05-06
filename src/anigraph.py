@@ -8,12 +8,59 @@
 #
 # SPDX-License-Identifier: MIT
 #
-from sys import argv
+from sys import argv, stderr, platform
+from re import findall
 import headers as ani
+
+# Can only test on Linux at the moment
+# Avoid running on other platforms as precaution
+if platform != 'linux':
+    print('Unrecognized OS/platform', file=stderr)
+    exit(-1)
 
 # Load the config file
 conf = dict()
 ani.config(conf)
 
 # If there is no config file, assume it's the first run
-if len(conf) < 1: ani.first_run(conf)
+if len(conf) < 1: ani.first_run(conf, argv[0])
+
+# Arguments:
+#   --help    or -h - to print the extended help
+#   --config  or -c - to change configuration settings
+#   --sync    or -s - to synchronize database
+#   --export  or -x - to generate js/html
+#   --open    or -o - to open the js/html (generate & open if no js/html or old data)
+#   --delete  or -d - to delete local account data
+#   --version or -v - to print version information
+arguments = ['help', 'config', 'sync', 'export', 'open', 'delete', 'version'
+             'h', 'c', 's', 'x', 'o', 'd', 'v']
+
+# Only the first argument will be parsed for now
+try:    arg = findall('^-[-]?([a-z]+)', argv[1])[0]
+except: arg = None
+
+if len(argv) < 2:
+    # If no arguments are given, just open the generated js/html files
+    # if the files have not been generated yet, and/or the database has not
+    # been sync'd, this will sync the database and generate the js/html files
+    # and proceed to run them
+    ani.open(conf['config_path'], conf['save_path'])
+elif arg is None:
+    print('ERROR: Unrecognized argument format: %s\n' %argv[1], file=stderr)
+    ani.print_short_help()
+    exit(2)
+elif arg not in arguments:
+    print('ERROR: Unrecognized argument: %s\n' %arg, file=stderr)
+    ani.print_short_help()
+    exit(3)
+
+if arg == 'help'    or 'h': ani.print_help()
+if arg == 'config'  or 'c': ani.set_config(conf)
+if arg == 'sync'    or 's': ani.sync(conf['config_path'])
+if arg == 'export'  or 'x': ani.export(conf['config_path'], conf['save_path'])
+if arg == 'open'    or 'o': ani.open(conf['config_path'],   conf['save_path'])
+if arg == 'delete'  or 'd': ani.delete(conf['config_path'], conf['save_path'])
+if arg == 'version' or 'v': ani.version()
+
+exit(0)
