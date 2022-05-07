@@ -13,13 +13,13 @@ Data source: AniList (anilist.co)
 ## First draft for the visualization of data:
 
 Simple (console):
-    - Top N list of most rated series
-    - Top N list of most rated genres
-    - Top N list of most rated VA participation
-    - Top N list of most watched genres
-    - Top N list of VA participation
+- Top N list of most rated series
+- Top N list of most rated genres
+- Top N list of most rated VA participation
+- Top N list of most watched genres
+- Top N list of VA participation
 
 Advanced (js/html):
-    - VA relationships (VAs working together interconnections)
-    - VAs participation in series through the seasons (Line graph)
-    - Word Cloud of the most watched genres
+- VA relationships (VAs working together interconnections)
+- VAs participation in series through the seasons (Line graph)
+- Word Cloud of the most watched genres
