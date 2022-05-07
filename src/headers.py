@@ -39,13 +39,13 @@ def first_run(conf):
     if not os.path.exists(conf['config_path']):
         try: os.mkdir(conf['config_path'])
         except Exception as err:
-            print('Unable to create the config dir: %s' %err, file=stderr)
+            print('Unable to create the config dir:', err, file=stderr)
             exit(127)
 
     if not os.path.exists(conf['save_path']):
         try: os.mkdir(conf['save_path'])
         except Exception as err:
-            print('Unable to create the save dir: %s' %err, file=stderr)
+            print('Unable to create the save dir:', err, file=stderr)
             exit(126)
 
     with open(os.path.join(conf['config_path'], _config_file), 'w') as file:
