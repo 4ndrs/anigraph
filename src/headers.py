@@ -9,7 +9,9 @@
 #
 import os
 from sys  import stderr
-from yaml import dump as save_yaml, load as load_yaml, CLoader as loader
+from yaml import dump    as save_yaml,
+                 load    as load_yaml,
+                 CLoader as loader
 
 _version        = 0.01
 _config_file    = 'config.yaml'
