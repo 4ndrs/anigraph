@@ -9,8 +9,8 @@
 #
 import os
 import sqlite3
-import requests
 import queries
+import requests
 from sys  import stderr
 from urllib.parse import urlencode
 from yaml import dump as save_yaml, load as load_yaml, CLoader as loader
@@ -31,8 +31,9 @@ def config(conf):
         with open(os.path.join(_cfg)) as file: conf = load_yaml(file, loader)
 
 # Quick check to see if the auth information is in the database
-def db_check():
-    con = sqlite3.connect(_db_name)
+def db_check(config_path):
+    if config_path == -1: con = sqlite3.connect(os.path.join(_config_dir, _db_name))
+    else: con = sqlite3.connect(os.path.join(config_path, _db_name))
     cur = con.cursor()
     try:
         cur.execute('SELECT token FROM auth_user;')
@@ -52,8 +53,6 @@ def set_config(conf):
 # Do the first run asking the user if they want to proceed using 
 # the default settings or want to personalize the configuration
 def first_run(conf, db_ok):
-    # The configuration consist of the location for the js/html files
-    # config files path, and synchronization settings
     # Use only local paths as the default for the moment
     conf['config_path'] = _config_dir
     conf['save_path']   = conf['config_path']
@@ -75,7 +74,7 @@ def first_run(conf, db_ok):
 
     # Ask the user to generate an auth token to use for authenticated queries
     if not db_ok:
-        con = sqlite3.connect(_db_name)
+        con = sqlite3.connect(os.path.join(conf['config_path'], _db_name))
         cur = con.cursor()
         cur.execute(queries.create_auth_user_table)
         print('An AniList authorization token is necessary to proceed. ' \
@@ -114,6 +113,34 @@ def print_help():
 
 # Sync the database with upstream
 def sync_db(conf_path):
+    print('Initializing sync...')
+    con = sqlite3.connect(os.path.join(conf_path, _db_name))
+    cur = con.cursor()
+
+    # Get user name from the database
+    cur.execute(queries.get_user_name)
+
+    _page       = 1 # Current page
+    _perpage    = 5 # Items per page
+    _username   = cur.fetchone()[0]
+    _userdb     = _username + '.db' # Database for user's list
+
+    con.close()
+    con = sqlite3.connect(os.path.join(conf_path, _userdb))
+    cur = con.cursor()
+
+    # Schema plan:
+    # https://docs.google.com/spreadsheets/d/1nO6fvxYeIJ6kgsiaeAohVpNf6MuaBRnZHz8imMolq_4
+    cur.executescript(queries.userdb_initialize)
+    con.commit()
+
+    variables = {
+        'page'      : _page,
+        'perPage'   : _perpage,
+        'userName'  : _username
+    }
+
+    con.close()
     pass
 
 # Extract the data from the local database and generate the js/html files

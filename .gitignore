@@ -2,5 +2,6 @@
 __pycache__
 src/test.py
 src/api_testing
+src/AniGraph
 config.yaml
 AniGraph.db
