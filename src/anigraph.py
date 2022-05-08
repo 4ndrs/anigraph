@@ -18,12 +18,14 @@ if platform != 'linux':
     print('Unrecognized OS/platform', file=stderr)
     exit(-1)
 
-# Load the config file
-conf = dict()
+# Load the config file & check the DB
+conf  = dict()
+db_ok = False
 ani.config(conf)
+db_ok = ani.db_check()
 
 # If there is no config file, assume it's the first run
-if len(conf) < 1: ani.first_run(conf)
+if len(conf) < 1: ani.first_run(conf, db_ok)
 
 # Arguments:
 #   --help    or -h - to print the extended help

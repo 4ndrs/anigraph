@@ -1,4 +1,6 @@
 *.swp
 __pycache__
 src/test.py
+src/api_testing
 config.yaml
+AniGraph.db
