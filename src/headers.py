@@ -12,6 +12,7 @@ import sqlite3
 import requests
 import queries
 from sys  import stderr
+from urllib.parse import urlencode
 from yaml import dump as save_yaml, load as load_yaml, CLoader as loader
 
 _version        = 0.01
@@ -20,8 +21,8 @@ _config_file    = 'config.yaml'
 _db_name        = 'AniGraph.db'
 _config_dir     = os.path.abspath('AniGraph') # TODO: change to standard config dir
 _api_url        = 'https://graphql.anilist.co'
-_auth_url       = 'https://anilist.co/api/v2/oauth/authorize?client_id='\
-                  + str(_client_id) + '&response_type=token'
+_req            = {'client_id':_client_id, 'response_type':'token'}
+_auth_url       = 'https://anilist.co/api/v2/oauth/authorize?' + urlencode(_req)
 
 # Check the config file and load into memory if it exists
 def config(conf):
