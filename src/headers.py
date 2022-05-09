@@ -139,10 +139,12 @@ def sync_db(conf_path):
         _db_last_updated = 0
     else: _perchunk = _sync_perchunk # Checking small changes little by little
 
-    if _perchunk == _full_perchunk: print('No local data found\nTrying a full sync.', end='', flush=True)
-    else: print('Trying a normal sync.', end='', flush=True)
+    if _perchunk == _full_perchunk: print('No local data found\nTrying a full sync (This may take a while)\n',
+                    end='', flush=True)
+    else: print('Trying a normal sync', end='', flush=True)
 
-    count = 0
+    _series_count   = 0
+    _char_count     = 0
     while True:
         variables = {
             'Chunk'     : _chunk,
@@ -150,8 +152,8 @@ def sync_db(conf_path):
             'userName'  : _username
         }
 
-        request = requests.post(_api_url, json={'query': queries.get_user_list, 'variables': variables},
-                                headers = {'Authorization': 'Bearer ' + _token})
+        request = requests.post(_api_url, json    = {'query': queries.get_user_list, 'variables': variables},
+                                          headers = {'Authorization': 'Bearer ' + _token})
         _upstream_last_updated =\
         request.json()['data']['MediaListCollection']['lists'][0]['entries'][0]\
                       ['media']['mediaListEntry']['updatedAt']
@@ -162,7 +164,7 @@ def sync_db(conf_path):
         if int(_rate_limit_remaining) < 5: time.sleep(60) # Avoid going over the rate limit
 
         if _status_code != 200:
-            print('Unhandled status code:', _status_code)
+            print('Unhandled status code:', _status_code, file=stderr)
             break
 
         # Check if there has been any changes upstream before sync
@@ -188,25 +190,36 @@ def sync_db(conf_path):
 
                 # A hack, need to get out if pulling old stuff
                 if _updated_at < _db_last_updated:
-                    print('**', end='', flush=True)
+                    print('XXXX', end='', flush=True)
                     _has_nextchunk = False
                     break;
 
-                # For debugging purposes
-                #print('id:', _id)
-                #print('episodes:', _episodes)
-                #print('title:', _title_romaji)
-                #print('title:', _title_native)
-                #print('season:', _season)
-                #print('season:', _season_year)
-                #print('genres:', _genres)
-                #print('score:', _score)
-                #print('status:', _status)
-                #print('progress:', _progress)
-                #print('updated:', _updated_at)
-                    #print('Entry number: %i\nID: %i\nUpdated at: %i\nTitle: %s\n日本語: %s\n'\
+                # Server sends duplicates somehow, I think it might be an upstream bug
+                _test_id = cur.execute('select * from series where id = ?', (_id,)).fetchone()
+                if _test_id is not None: break
+
+                # For debugging purposes:
+                # With the following I can confirm the server returns duplicates with no changes
+                # in any of our fields, these will be dropped by the Series id unique constraint in userdb
+                #_test_id = cur.execute('select * from series where id = ?', (_id,)).fetchone()
+                #if _test_id is not None:
+                #    print('Found ID %i in the Database:' %_id)
+                #    print('id:', _id)
+                #    print('episodes:', _episodes)
+                #    print('title:', _title_romaji)
+                #    print('title:', _title_native)
+                #    print('season:', _season)
+                #    print('season:', _season_year)
+                #    print('genres:', _genres)
+                #    print('score:', _score)
+                #    print('status:', _status)
+                #    print('progress:', _progress)
+                #    print('updated:', _updated_at)
+                #    print('Database entry:\n', _test_id)
+
+                #print('Entry number: %i\nID: %i\nUpdated at: %i\nTitle: %s\n日本語: %s\n'\
                 #      'Season: %s %i\nScore: %i\nStatus: %s\nProgress: %s\nEpisodes: %s\n'\
-                #      % (count, _id, _updated_at, _title_romaji, _title_native, _season, _season_year,
+                #      % (_series_count, _id, _updated_at, _title_romaji, _title_native, _season, _season_year,
                 #         _score, _status, _progress, _episodes))
 
                 if _season is None:
@@ -230,7 +243,12 @@ def sync_db(conf_path):
                     _genre_id = cur.execute(queries.userdb_get_genre_id, (_genre,)).fetchone()[0]
                     cur.execute(queries.userdb_insert_series_and_genres, (_id, _genre_id))
 
-                count += 1
+                # Sync the characters for this series
+                # TODO: Add the language variable to conf dict
+                _sync_char_results = _sync_characters(_id, 'JAPANESE', con, cur, False)
+                if _sync_char_results is not None: _char_count += _sync_char_results
+
+                _series_count += 1
 
         # HDD too slow, moved commit here
         con.commit()
@@ -239,7 +257,68 @@ def sync_db(conf_path):
         else:  _chunk += 1
         time.sleep(1)
     con.close()
-    print('\nProcessed', count, 'entries')
+    print('\nProcessed', _series_count, 'entries and', _char_count, 'characters')
+
+# Sync characters for a single series
+def _sync_characters(series_id, language, con, cur, forced):
+    _page       = 1     # The current page
+    _perpage    = 20    # Characters per page
+    _count      = 0
+    _char_syncd = cur.execute(queries.userdb_get_characters_in_series, (series_id,)).fetchone()
+
+    # If we find that the characters for this series are already synced,
+    # and 'forced' is false, do nothing
+    if _char_syncd is not None and not forced: return None
+
+    while True:
+        variables = {
+            'id'        : series_id,
+            'page'      : _page,
+            'perPage'   : _perpage,
+            'LANGUAGE'  : language,
+        }
+
+        request = requests.post(_api_url, json = {'query' : queries.get_characters_and_vas,
+                                                  'variables' : variables})
+        _has_nextpage = request.json()['data']['Media']['characters']['pageInfo']['hasNextPage']
+        _rate_limit_remaining = request.headers['X-RateLimit-Remaining']
+        _status_code = request.status_code
+
+        if int(_rate_limit_remaining) < 5: time.sleep(60) # Avoid getting over the rate limit
+
+        if _status_code != 200:
+            print('Unhandled status code:', _status_code)
+            return _count
+
+        for character in request.json()['data']['Media']['characters']['edges']:
+            _char_id            = character['node']['id']
+            _char_name_last     = character['node']['name']['last']
+            _char_name_first    = character['node']['name']['first']
+
+            # Save the character in the database
+            cur.execute(queries.userdb_insert_character, (_char_id, _char_name_last, _char_name_first))
+
+            # Series and Characters connection
+            cur.execute(queries.userdb_insert_series_and_characters, (series_id, _char_id))
+
+            for va in character['voiceActors']:
+                _va_id          = va['id']
+                _va_name_last   = va['name']['last']
+                _va_name_first  = va['name']['first']
+
+                # Save the VA in the database
+                cur.execute(queries.userdb_insert_va, (_va_id, _va_name_last, _va_name_first))
+
+                # Characters and VAs connection
+                cur.execute(queries.userdb_insert_characters_and_vas, (_char_id, _va_id))
+
+        _count += 1
+        print('*', end='', flush=True) # Simple progress bar for characters
+        if not _has_nextpage: break
+        _page += 1
+        time.sleep(1)
+
+    return _count
 
 # Extract the data from the local database and generate the js/html files
 def export_stats(conf_path, save_path):

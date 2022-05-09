@@ -50,30 +50,31 @@ query ($userName: String, $perChunk: Int, $Chunk: Int) {
   }
 }
 '''
-
-_get_user_list =\
+get_characters_and_vas =\
 '''
-{
-  Page(page: $page, perPage:$perPage) {
-    pageInfo {
+query ($id: Int, $page: Int, $perPage: Int, $LANGUAGE: StaffLanguage) {
+  Media (id:$id) {
+   characters (page: $page, perPage: $perPage) {
+    pageInfo{
       hasNextPage
-      lastPage
     }
-    mediaList (userName:$userName, type:ANIME, sort: ADDED_TIME_DESC){
-      media {
+    edges {
+      node {
         id
-        title {
-          romaji
-          native
+        name {
+          last
+          first
         }
-        season
-        seasonYear
-        genres
-        mediaListEntry {
-          score
+      }
+      voiceActors (language: $LANGUAGE) {
+        id
+        name {
+          last
+          first
         }
       }
     }
+   } 
   }
 }
 '''
@@ -123,6 +124,11 @@ userdb_get_genre_id =\
 SELECT id FROM Genres WHERE genre = ?
 '''
 
+userdb_get_characters_in_series =\
+'''
+SELECT character_id FROM Series_and_Characters WHERE series_id = ?
+'''
+
 userdb_insert_status =\
 '''
 INSERT OR IGNORE INTO Status (status) VALUES (?)
@@ -141,12 +147,32 @@ INSERT OR IGNORE INTO Genres (genre) VALUES (?)
 userdb_insert_series =\
 '''
 INSERT OR REPLACE INTO Series (id, title_romaji, title_native, episodes, progress, score, updated_at,
-                               season_id, status_id) VALUES (?,?,?,?,?,?,?,?,?)
+                               season_id, status_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+'''
+
+userdb_insert_character =\
+'''
+INSERT OR IGNORE INTO Characters (id, name_last, name_first) VALUES (?, ?, ?)
+'''
+
+userdb_insert_va =\
+'''
+INSERT OR IGNORE INTO VAs (id, name_last, name_first) VALUES (?, ?, ?)
 '''
 
 userdb_insert_series_and_genres =\
 '''
 INSERT OR IGNORE INTO Series_and_Genres (series_id, genre_id) VALUES (?, ?)
+'''
+
+userdb_insert_series_and_characters =\
+'''
+INSERT OR IGNORE INTO Series_and_Characters (series_id, character_id) VALUES (?, ?)
+'''
+
+userdb_insert_characters_and_vas =\
+'''
+INSERT OR IGNORE INTO Characters_and_VAs (character_id, va_id) VALUES (?, ?)
 '''
 
 userdb_initialize =\
