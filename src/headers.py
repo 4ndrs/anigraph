@@ -312,7 +312,8 @@ def _sync_characters(series_id, language, con, cur, forced):
                 # Characters and VAs connection
                 cur.execute(queries.userdb_insert_characters_and_vas, (_char_id, _va_id))
 
-        _count += 1
+            _count += 1
+
         print('*', end='', flush=True) # Simple progress bar for characters
         if not _has_nextpage: break
         _page += 1
