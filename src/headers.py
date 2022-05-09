@@ -37,8 +37,7 @@ def db_check(config_path):
     else: con = sqlite3.connect(os.path.join(config_path, _db_name))
     cur = con.cursor()
     try:
-        cur.execute('SELECT token FROM auth_user;')
-        if len(cur.fetchone()) < 1:
+        if len(cur.execute(queries.get_user_token).fetchone()) < 1:
             con.close()
             return False
         con.close()
@@ -51,23 +50,21 @@ def db_check(config_path):
 def set_config(conf):
     pass
 
-# Do the first run asking the user if they want to proceed using 
-# the default settings or want to personalize the configuration
+# Do an initial setup and use the default configuration
 def first_run(conf, db_ok):
-    # Use only local paths as the default for the moment
     conf['config_path'] = _config_dir
     conf['save_path']   = conf['config_path']
 
     if not os.path.exists(conf['config_path']):
         try: os.mkdir(conf['config_path'])
         except Exception as err:
-            print('Unable to create the config dir:', err, file=stderr)
+            print('Unable to create the configuration directory:', err, file=stderr)
             exit(127)
 
     if not os.path.exists(conf['save_path']):
         try: os.mkdir(conf['save_path'])
         except Exception as err:
-            print('Unable to create the save dir:', err, file=stderr)
+            print('Unable to create the save directory:', err, file=stderr) # Needs better wording
             exit(126)
 
     with open(os.path.join(conf['config_path'], _config_file), 'w') as file:
@@ -82,27 +79,29 @@ def first_run(conf, db_ok):
                'Navigate to the following link, and paste the token generated ' \
                'by the server, below.\nLink:', _auth_url)
         while True:
-            token = input('Token: ')
-            if len(token) < 1:
+            _token = input('Token: ')
+            if len(_token) < 1:
                 print('No token provided')
                 continue
             else:
-                token = token.strip()
-                print('Trying to get user information...')
+                _token = _token.strip()
+                print('Getting user information...')
                 request = requests.post(_api_url, json={'query': queries.get_user},
-                          headers = {'Authorization': 'Bearer ' + token})
+                          headers = {'Authorization': 'Bearer ' + _token})
                 if request.status_code != 200:
-                    print('Could not get user information, error code:', request.status_code)
+                    print('Could not get user information, status code:', request.status_code)
                     continue
-                uname = request.json()['data']['Viewer']['name']
-                uid   = request.json()['data']['Viewer']['id']
-                print('User information retrieved\nName:', uname, '\nID:', uid)
+                _uname = request.json()['data']['Viewer']['name']
+                _uid   = request.json()['data']['Viewer']['id']
+                print('User information retrieved\nName:', _uname, '\nID:', _uid)
                 print('Saving auth information to the database...')
-                cur.execute(queries.save_user_auth, (uid, uname, token))
+                cur.execute(queries.save_user_auth, (_uid, _uname, _token))
                 break
         con.commit()
         con.close()
-        # TODO: implement sync function and launch it here
+
+        # Run first sync
+        sync_db(conf['config_path'])
 
 # Print a short help message
 def print_short_help():
@@ -118,8 +117,8 @@ def sync_db(conf_path):
     con = sqlite3.connect(os.path.join(conf_path, _db_name))
     cur = con.cursor()
 
-    _chunk   	    = 1 # Current chunk
-    _sync_perchunk  = 10 # Items per chunk for normal sync
+    _chunk          = 1   # Current chunk
+    _sync_perchunk  = 10  # Items per chunk for normal sync
     _full_perchunk  = 100 # Items per chunk for first  sync
     _username       = cur.execute(queries.get_user_name).fetchone()[0]
     _token          = cur.execute(queries.get_user_token).fetchone()[0]
@@ -135,10 +134,12 @@ def sync_db(conf_path):
     con.commit()
 
     _db_last_updated = cur.execute(queries.userdb_get_last_updated).fetchone()[0]
-    if _db_last_updated is None: _perchunk = _full_perchunk # For big syncs, only the first time when no DB
-    else:                        _perchunk = _sync_perchunk # Checking small changes little by little
+    if _db_last_updated is None:
+        _perchunk = _full_perchunk   # For big syncs, only the first time when no DB
+        _db_last_updated = 0
+    else: _perchunk = _sync_perchunk # Checking small changes little by little
 
-    if _perchunk == _full_perchunk: print('No local data found. Trying a full sync.', end='', flush=True)
+    if _perchunk == _full_perchunk: print('No local data found\nTrying a full sync.', end='', flush=True)
     else: print('Trying a normal sync.', end='', flush=True)
 
     count = 0
@@ -152,7 +153,8 @@ def sync_db(conf_path):
         request = requests.post(_api_url, json={'query': queries.get_user_list, 'variables': variables},
                                 headers = {'Authorization': 'Bearer ' + _token})
         _upstream_last_updated =\
-        request.json()['data']['MediaListCollection']['lists'][0]['entries'][0]['media']['mediaListEntry']['updatedAt']
+        request.json()['data']['MediaListCollection']['lists'][0]['entries'][0]\
+                      ['media']['mediaListEntry']['updatedAt']
         _has_nextchunk = request.json()['data']['MediaListCollection']['hasNextChunk']
         _rate_limit_remaining = request.headers['X-RateLimit-Remaining']
         _status_code = request.status_code
@@ -183,6 +185,12 @@ def sync_db(conf_path):
                 _status         = entry['mediaListEntry']['status']
                 _progress       = entry['mediaListEntry']['progress']
                 _updated_at     = entry['mediaListEntry']['updatedAt']
+
+                # A hack, need to get out if pulling old stuff
+                if _updated_at < _db_last_updated:
+                    print('**', end='', flush=True)
+                    _has_nextchunk = False
+                    break;
 
                 # For debugging purposes
                 #print('id:', _id)
@@ -226,7 +234,7 @@ def sync_db(conf_path):
 
         # HDD too slow, moved commit here
         con.commit()
-        print('.', end='', flush=True)
+        print('.', end='', flush=True)  # A simple progress bar for chunks processed
         if not _has_nextchunk: break
         else:  _chunk += 1
         time.sleep(1)
