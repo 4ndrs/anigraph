@@ -287,7 +287,7 @@ def _sync_characters(series_id, language, con, cur, forced):
         if int(_rate_limit_remaining) < 5: time.sleep(60) # Avoid getting over the rate limit
 
         if _status_code != 200:
-            print('Unhandled status code:', _status_code)
+            print('Unhandled status code:', _status_code, file=stderr)
             return _count
 
         for character in request.json()['data']['Media']['characters']['edges']:
