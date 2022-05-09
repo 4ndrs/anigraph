@@ -27,18 +27,9 @@ db_ok = ani.db_check(conf.get('config_path', -1))
 # If there is no config file, assume it's the first run
 if len(conf) < 1: ani.first_run(conf, db_ok)
 
-# Arguments:
-#   --help    or -h - to print the extended help
-#   --config  or -c - to change configuration settings
-#   --sync    or -s - to synchronize database
-#   --export  or -x - to generate js/html
-#   --open    or -o - to open the js/html (generate & open if no js/html or old data)
-#   --delete  or -d - to delete local account data
-#   --version or -v - to print version information
-arguments = ['help', 'config', 'sync', 'export', 'open', 'delete', 'version',
-             'h', 'c', 's', 'x', 'o', 'd', 'v']
+arguments = ('help', 'config', 'sync', 'export', 'open', 'delete', 'version',
+             'top', 'h', 'c', 's', 'x', 'o', 'd', 'v', 't')
 
-# Only the first argument will be parsed for now
 try:    arg = findall('^-[-]?([a-z]+)', argv[1])[0]
 except: arg = None
 
@@ -49,11 +40,11 @@ if len(argv) < 2:
     # and proceed to run them
     ani.open_stats(conf['config_path'], conf['save_path'])
 elif arg is None:
-    print('ERROR: Unrecognized argument format: %s\n' %argv[1], file=stderr)
+    print('Unrecognized argument format: %s\n' %argv[1], file=stderr)
     ani.print_short_help()
     exit(2)
 elif arg not in arguments:
-    print('ERROR: Unrecognized argument: %s\n' %arg, file=stderr)
+    print('Unrecognized argument: %s\n' %arg, file=stderr)
     ani.print_short_help()
     exit(3)
 
@@ -64,5 +55,33 @@ if arg == 'export'  or arg == 'x': ani.export_stats(conf['config_path'], conf['s
 if arg == 'open'    or arg == 'o': ani.open_stats(conf['config_path'], conf['save_path'])
 if arg == 'delete'  or arg == 'd': ani.delete(conf['config_path'], conf['save_path'])
 if arg == 'version' or arg == 'v': ani.version()
+
+# Usage: ./% -t 10 rated series
+#        ./% -t 10 rated genres
+#        ./% -t 10 rated VA participation # VAs with the most rated series
+#        ./% -t 10 watched genres
+#        ./% -t 10 VA participation       # VAs frequency in series
+if arg == 'top' or arg == 't':
+    if len(argv) < 4:
+        print('Not enough arguments', file=stderr)
+        exit(4)
+
+    try:    top_n = int(argv[2])
+    except:
+        print('Invalid number:', argv[2], file=stderr)
+        exit(5)
+
+    reqs = ['rated series', 'rated genres', 'rated va participation', 'watched genres',
+            'va participation', 'rs', 'rg', 'rvp', 'wg', 'vp']
+    req0 = ''
+    for word in argv[3:]: req0 += word + ' '
+    req = req0.rstrip().lower()
+
+    if req not in reqs:
+        print('Request not understood: ', req0, file=stderr)
+        exit(5)
+
+    if req == 'rated series' or req == 'rs': ani.print_stuff(conf['config_path'], 'rs', top_n)
+    if req == 'rated genres' or req == 'rg': ani.print_stuff(conf['config_path'], 'rg', top_n)
 
 exit(0)

@@ -12,6 +12,8 @@ import time
 import sqlite3
 import queries
 import requests
+import pandas as pd
+from tabulate import tabulate
 from sys  import stderr
 from urllib.parse import urlencode
 from yaml import dump as save_yaml, load as load_yaml, CLoader as loader
@@ -115,13 +117,12 @@ def print_help():
 def sync_db(conf_path):
     print('Processing sync...')
     con = sqlite3.connect(os.path.join(conf_path, _db_name))
-    cur = con.cursor()
 
     _chunk          = 1   # Current chunk
     _sync_perchunk  = 10  # Items per chunk for normal sync
     _full_perchunk  = 100 # Items per chunk for first  sync
-    _username       = cur.execute(queries.get_user_name).fetchone()[0]
-    _token          = cur.execute(queries.get_user_token).fetchone()[0]
+    _username       = con.execute(queries.get_user_name).fetchone()[0]
+    _token          = con.execute(queries.get_user_token).fetchone()[0]
     _userdb         = _username + '.db' # Database for user's list
 
     con.close()
@@ -336,3 +337,32 @@ def delete(config_path, save_path):
 # Print version information
 def version():
     pass
+
+def print_stuff(conf_path, req, top_n):
+    con = sqlite3.connect(os.path.join(conf_path, _db_name))
+    _username   = con.execute(queries.get_user_name).fetchone()[0]
+    _userdb     = _username + '.db'
+    con.close()
+
+    con = sqlite3.connect(os.path.join(conf_path, _userdb))
+
+    if req == 'rs':
+        _table       = pd.read_sql_query(queries.userdb_get_top_series, con, params=(top_n,))
+        _table.index = pd.RangeIndex(start = 1, stop = top_n + 1, step = 1)
+        _headers     = ('TITLE', 'SCORE', 'SEASON', 'YEAR')
+        print(tabulate(_table, headers = _headers))
+
+    if req == 'rg':
+        # Get all the genres and assign to each the sum of the score of their series
+        _genres = dict()
+        for _genre in con.execute(queries.userdb_get_all_genres): _genres[_genre[0]] = 0
+        for _genre in _genres: _genres[_genre] = con.execute(queries.userdb_get_genre_score, (_genre,)).fetchone()[0]
+
+        # Can't think of a better way to do this at the moment
+        _sorted_genres = sorted([(value, key) for key, value in _genres.items()], reverse=True)
+        _table          = pd.DataFrame([(key, value) for value, key in _sorted_genres][:top_n])
+        _table.index    = pd.RangeIndex(start = 1, stop = top_n + 1, step = 1)
+        _headers        = ('GENRE', 'TOTAL SCORE')
+        print(tabulate(_table, headers = _headers))
+
+    con.close()

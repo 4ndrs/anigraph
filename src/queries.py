@@ -124,9 +124,26 @@ userdb_get_genre_id =\
 SELECT id FROM Genres WHERE genre = ?
 '''
 
+userdb_get_all_genres =\
+'''
+SELECT genre FROM Genres
+'''
+userdb_get_genre_score =\
+'''
+SELECT SUM(Series.score) FROM Genres JOIN Series JOIN Series_and_Genres
+ON Genres.genre = ? AND Series_and_Genres.genre_id = Genres.id
+AND Series.id = Series_and_Genres.series_id
+'''
 userdb_get_characters_in_series =\
 '''
 SELECT character_id FROM Series_and_Characters WHERE series_id = ?
+'''
+
+userdb_get_top_series =\
+'''
+SELECT Series.title_romaji, Series.score, Seasons.season, Seasons.season_year
+FROM Series JOIN Seasons on Series.season_id = Seasons.id
+ORDER BY Series.score DESC, Series.title_romaji limit ?
 '''
 
 userdb_insert_status =\
