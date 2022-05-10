@@ -120,7 +120,7 @@ def sync_db(conf_path):
 
     _chunk          = 1   # Current chunk
     _sync_perchunk  = 10  # Items per chunk for normal sync
-    _full_perchunk  = 100 # Items per chunk for first  sync
+    _full_perchunk  = 400 # Items per chunk for first  sync
     _username       = con.execute(queries.get_user_name).fetchone()[0]
     _token          = con.execute(queries.get_user_token).fetchone()[0]
     _userdb         = _username + '.db' # Database for user's list
@@ -177,6 +177,7 @@ def sync_db(conf_path):
         for listx in request.json()['data']['MediaListCollection']['lists']:
             for entry in listx['entries']:
                 entry = entry['media']
+
                 _id             = entry['id']
                 _episodes       = entry['episodes']
                 _title_romaji   = entry['title']['romaji']
@@ -191,13 +192,13 @@ def sync_db(conf_path):
 
                 # A hack, need to get out if pulling old stuff
                 if _updated_at < _db_last_updated:
-                    print('XXXX', end='', flush=True)
+                    print('=', end='', flush=True)
                     _has_nextchunk = False
                     break;
 
                 # Server sends duplicates somehow, I think it might be an upstream bug
-                _test_id = cur.execute('select * from series where id = ?', (_id,)).fetchone()
-                if _test_id is not None: break
+                #_test_id = cur.execute('select * from series where id = ?', (_id,)).fetchone()
+                #if _test_id is not None: break
 
                 # For debugging purposes:
                 # With the following I can confirm the server returns duplicates with no changes
@@ -256,7 +257,7 @@ def sync_db(conf_path):
         print('.', end='', flush=True)  # A simple progress bar for chunks processed
         if not _has_nextchunk: break
         else:  _chunk += 1
-        time.sleep(1)
+        #time.sleep(1)
     con.close()
     print('\nProcessed', _series_count, 'entries and', _char_count, 'characters')
 
@@ -285,7 +286,9 @@ def _sync_characters(series_id, language, con, cur, forced):
         _rate_limit_remaining = request.headers['X-RateLimit-Remaining']
         _status_code = request.status_code
 
-        if int(_rate_limit_remaining) < 5: time.sleep(60) # Avoid getting over the rate limit
+        if int(_rate_limit_remaining) < 5:
+            con.commit()
+            time.sleep(60) # Avoid getting over the rate limit
 
         if _status_code != 200:
             print('Unhandled status code:', _status_code, file=stderr)
@@ -318,7 +321,7 @@ def _sync_characters(series_id, language, con, cur, forced):
         print('*', end='', flush=True) # Simple progress bar for characters
         if not _has_nextpage: break
         _page += 1
-        time.sleep(1)
+        #time.sleep(1)
 
     return _count
 
@@ -394,4 +397,8 @@ def print_stuff(conf_path, req, top_n):
         _table.index    = pd.RangeIndex(start = 1, stop = top_n + 1, step = 1)
         _headers        = ('NAME', 'TOTAL SCORE')
         print(tabulate(_table, headers = _headers))
+
+    if req == 'wg':
+        pass
+
     con.close()
