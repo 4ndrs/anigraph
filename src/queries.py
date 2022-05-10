@@ -161,6 +161,14 @@ AND Characters_and_VAs.va_id = VAs.id AND Characters_and_VAs.character_id = Char
 AND Series_and_Characters.character_id = Characters.id AND Series.id = Series_and_Characters.series_id
 '''
 
+userdb_get_va_series_count =\
+'''
+SELECT COUNT(Series.id) FROM VAs JOIN Series JOIN Characters
+JOIN Series_and_Characters JOIN Characters_and_VAs ON VAs.id = ?
+AND Characters_and_VAs.va_id = VAs.id AND Characters_and_VAs.character_id = Characters.id
+AND Series_and_Characters.character_id = Characters.id AND Series.id = Series_and_Characters.series_id
+'''
+
 userdb_get_characters_in_series =\
 '''
 SELECT character_id FROM Series_and_Characters WHERE series_id = ?

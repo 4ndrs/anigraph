@@ -85,5 +85,6 @@ if arg == 'top' or arg == 't':
     if req == 'rated genres'            or req == 'rg': ani.print_stuff(conf['config_path'],  'rg',  top_n)
     if req == 'rated va participation'  or req == 'rvp': ani.print_stuff(conf['config_path'], 'rvp', top_n)
     if req == 'watched genres'          or req == 'wg': ani.print_stuff(conf['config_path'],  'wg',  top_n)
+    if req == 'va participation'        or req == 'vp': ani.print_stuff(conf['config_path'],  'vp',  top_n)
 
 exit(0)
