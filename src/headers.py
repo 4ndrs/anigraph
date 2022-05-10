@@ -365,4 +365,33 @@ def print_stuff(conf_path, req, top_n):
         _headers        = ('GENRE', 'TOTAL SCORE')
         print(tabulate(_table, headers = _headers))
 
+    if req == 'rvp':
+        _va_ids = dict()
+
+        for _va_id in con.execute(queries.userdb_get_all_va_ids): _va_ids[_va_id[0]] = 0
+
+        # This takes a while
+        print('Calculating the total scores (This may take a while)', end='', flush=True)
+        _c = 0
+        for _va_id in _va_ids:
+            _va_ids[_va_id] = con.execute(queries.userdb_get_va_score, (_va_id,)).fetchone()[0]
+            if _c % 100 == 0: print('.', end='', flush=True) # simple progress bar
+            _c += 1
+        print('')
+
+        _sorted_va_ids = sorted([(value, key) for key, value in _va_ids.items()], reverse=True)
+
+        # Convert IDs to last name, first name
+        _sorted_vas = dict()
+        for score, _va_id in _sorted_va_ids:
+            _names = con.execute(queries.userdb_get_va_name, (_va_id,)).fetchone()
+            if      _names[0] is None: _va_name = _names[0]
+            elif    _names[1] is None: _va_name = _names[1]
+            else: _va_name = ''.join((_names[0], ' ', _names[1]))
+            _sorted_vas[_va_name] = score
+
+        _table          = pd.DataFrame([(key, value) for key, value in _sorted_vas.items()][:top_n])
+        _table.index    = pd.RangeIndex(start = 1, stop = top_n + 1, step = 1)
+        _headers        = ('NAME', 'TOTAL SCORE')
+        print(tabulate(_table, headers = _headers))
     con.close()

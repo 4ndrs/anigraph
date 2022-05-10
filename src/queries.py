@@ -124,16 +124,36 @@ userdb_get_genre_id =\
 SELECT id FROM Genres WHERE genre = ?
 '''
 
+userdb_get_va_name =\
+'''
+SELECT name_last, name_first FROM VAs WHERE id = ?
+'''
+
 userdb_get_all_genres =\
 '''
 SELECT genre FROM Genres
 '''
+
+userdb_get_all_va_ids =\
+'''
+SELECT id FROM VAs
+'''
+
 userdb_get_genre_score =\
 '''
 SELECT SUM(Series.score) FROM Genres JOIN Series JOIN Series_and_Genres
 ON Genres.genre = ? AND Series_and_Genres.genre_id = Genres.id
 AND Series.id = Series_and_Genres.series_id
 '''
+
+userdb_get_va_score =\
+'''
+SELECT SUM(Series.score) FROM VAs JOIN Series JOIN Characters
+JOIN Series_and_Characters JOIN Characters_and_VAs ON VAs.id = ?
+AND Characters_and_VAs.va_id = VAs.id AND Characters_and_VAs.character_id = Characters.id
+AND Series_and_Characters.character_id = Characters.id AND Series.id = Series_and_Characters.series_id
+'''
+
 userdb_get_characters_in_series =\
 '''
 SELECT character_id FROM Series_and_Characters WHERE series_id = ?
