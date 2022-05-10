@@ -81,8 +81,9 @@ if arg == 'top' or arg == 't':
         print('Request not understood: ', req0, file=stderr)
         exit(5)
 
-    if req == 'rated series'            or req == 'rs': ani.print_stuff(conf['config_path'], 'rs', top_n)
-    if req == 'rated genres'            or req == 'rg': ani.print_stuff(conf['config_path'], 'rg', top_n)
+    if req == 'rated series'            or req == 'rs': ani.print_stuff(conf['config_path'],  'rs',  top_n)
+    if req == 'rated genres'            or req == 'rg': ani.print_stuff(conf['config_path'],  'rg',  top_n)
     if req == 'rated va participation'  or req == 'rvp': ani.print_stuff(conf['config_path'], 'rvp', top_n)
+    if req == 'watched genres'          or req == 'wg': ani.print_stuff(conf['config_path'],  'wg',  top_n)
 
 exit(0)

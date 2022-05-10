@@ -139,6 +139,13 @@ userdb_get_all_va_ids =\
 SELECT id FROM VAs
 '''
 
+userdb_get_genre_series_count =\
+'''
+SELECT COUNT(Series.id) FROM Genres JOIN Series JOIN Series_and_Genres
+ON Genres.genre = ? AND Series_and_Genres.genre_id = Genres.id
+AND Series.id = Series_and_Genres.series_id
+'''
+
 userdb_get_genre_score =\
 '''
 SELECT SUM(Series.score) FROM Genres JOIN Series JOIN Series_and_Genres

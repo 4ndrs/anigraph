@@ -399,6 +399,16 @@ def print_stuff(conf_path, req, top_n):
         print(tabulate(_table, headers = _headers))
 
     if req == 'wg':
-        pass
+        # Get all genres, and then get the number of series each have
+        _genres = dict()
+        for _genre in con.execute(queries.userdb_get_all_genres): _genres[_genre[0]] = 0
+        for _genre in _genres: _genres[_genre] = con.execute(queries.userdb_get_genre_series_count,
+                                                                            (_genre,)).fetchone()[0]
+
+        _sorted_genres = sorted([(value, key) for key, value in _genres.items()], reverse=True)
+        _table          = pd.DataFrame([(key, value) for value, key in _sorted_genres][:top_n])
+        _table.index    = pd.RangeIndex(start = 1, stop = top_n + 1, step = 1)
+        _headers        = ('GENRE', 'TOTAL SERIES')
+        print(tabulate(_table, headers = _headers))
 
     con.close()
