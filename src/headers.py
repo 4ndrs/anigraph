@@ -388,8 +388,8 @@ def print_stuff(conf_path, req, top_n):
         _sorted_vas = dict()
         for score, _va_id in _sorted_va_ids:
             _names = con.execute(queries.userdb_get_va_name, (_va_id,)).fetchone()
-            if      _names[0] is None: _va_name = _names[0]
-            elif    _names[1] is None: _va_name = _names[1]
+            if      _names[0] is None: _va_name = _names[1]
+            elif    _names[1] is None: _va_name = _names[0]
             else: _va_name = ''.join((_names[0], ' ', _names[1]))
             _sorted_vas[_va_name] = score
 
@@ -431,8 +431,8 @@ def print_stuff(conf_path, req, top_n):
         _sorted_vas = dict()
         for score, _va_id in _sorted_va_ids:
             _names = con.execute(queries.userdb_get_va_name, (_va_id,)).fetchone()
-            if      _names[0] is None: _va_name = _names[0]
-            elif    _names[1] is None: _va_name = _names[1]
+            if      _names[0] is None: _va_name = _names[1]
+            elif    _names[1] is None: _va_name = _names[0]
             else: _va_name = ''.join((_names[0], ' ', _names[1]))
             _sorted_vas[_va_name] = score
 
