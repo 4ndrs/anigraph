@@ -40,11 +40,11 @@ if len(argv) < 2:
     # and proceed to run them
     ani.open_stats(conf['config_path'], conf['save_path'])
 elif arg is None:
-    print('Unrecognized argument format: %s\n' %argv[1], file=stderr)
+    print(f'Unrecognized argument format: {argv[1]}\n', file=stderr)
     ani.print_short_help()
     exit(2)
 elif arg not in arguments:
-    print('Unrecognized argument: %s\n' %arg, file=stderr)
+    print(f'Unrecognized argument: {arg}\n', file=stderr)
     ani.print_short_help()
     exit(3)
 
@@ -71,8 +71,8 @@ if arg == 'top' or arg == 't':
         print('Invalid number:', argv[2], file=stderr)
         exit(5)
 
-    reqs = ['rated series', 'rated genres', 'rated va participation', 'watched genres',
-            'va participation', 'rs', 'rg', 'rvp', 'wg', 'vp']
+    reqs = ('rated series', 'rated genres', 'rated va participation', 'watched genres',
+            'va participation', 'rs', 'rg', 'rvp', 'wg', 'vp')
     req0 = ''
     for word in argv[3:]: req0 += word + ' '
     req = req0.rstrip().lower()

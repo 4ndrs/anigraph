@@ -200,12 +200,8 @@ def sync_db(conf_path):
                 #_test_id = cur.execute('select * from series where id = ?', (_id,)).fetchone()
                 #if _test_id is not None: break
 
-                # For debugging purposes:
-                # With the following I can confirm the server returns duplicates with no changes
-                # in any of our fields, these will be dropped by the Series id unique constraint in userdb
-                #_test_id = cur.execute('select * from series where id = ?', (_id,)).fetchone()
                 #if _test_id is not None:
-                #    print('Found ID %i in the Database:' %_id)
+                #    print(f'Found ID {_id} in the Database:')
                 #    print('id:', _id)
                 #    print('episodes:', _episodes)
                 #    print('title:', _title_romaji)
@@ -218,11 +214,6 @@ def sync_db(conf_path):
                 #    print('progress:', _progress)
                 #    print('updated:', _updated_at)
                 #    print('Database entry:\n', _test_id)
-
-                #print('Entry number: %i\nID: %i\nUpdated at: %i\nTitle: %s\n日本語: %s\n'\
-                #      'Season: %s %i\nScore: %i\nStatus: %s\nProgress: %s\nEpisodes: %s\n'\
-                #      % (_series_count, _id, _updated_at, _title_romaji, _title_native, _season, _season_year,
-                #         _score, _status, _progress, _episodes))
 
                 if _season is None:
                     _season      = 'null_season'
@@ -390,7 +381,7 @@ def print_stuff(conf_path, req, top_n):
             _names = con.execute(queries.userdb_get_va_name, (_va_id,)).fetchone()
             if      _names[0] is None: _va_name = _names[1]
             elif    _names[1] is None: _va_name = _names[0]
-            else: _va_name = ''.join((_names[0], ' ', _names[1]))
+            else: _va_name = ' '.join((_names[0], _names[1]))
             _sorted_vas[_va_name] = score
 
         _table          = pd.DataFrame([(key, value) for key, value in _sorted_vas.items()][:top_n])
@@ -433,7 +424,7 @@ def print_stuff(conf_path, req, top_n):
             _names = con.execute(queries.userdb_get_va_name, (_va_id,)).fetchone()
             if      _names[0] is None: _va_name = _names[1]
             elif    _names[1] is None: _va_name = _names[0]
-            else: _va_name = ''.join((_names[0], ' ', _names[1]))
+            else: _va_name = ' '.join((_names[0], _names[1]))
             _sorted_vas[_va_name] = score
 
         _table          = pd.DataFrame([(key, value) for key, value in _sorted_vas.items()][:top_n])
